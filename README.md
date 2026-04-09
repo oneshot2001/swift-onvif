@@ -19,6 +19,14 @@
 
 ---
 
+<p align="center">
+  <img src="demo.gif" alt="SwiftONVIF Demo — Discovery + Device Query" width="100%">
+  <br>
+  <sub>Real output against an AXIS Q6358-LE on a local network</sub>
+</p>
+
+---
+
 ## Why SwiftONVIF?
 
 There are ONVIF libraries for [Go](https://github.com/use-go/onvif), [Node.js](https://github.com/agsh/onvif), [Python](https://github.com/FalkTannworths/python-onvif-zeep), and [Rust](https://github.com/nickel-org/onvif-rs) -- but **nothing production-ready for Swift**. The highest-starred Swift ONVIF project has 97 stars, covers only 4 operations, and depends on a closed-source binary SOAP engine.
@@ -28,7 +36,7 @@ SwiftONVIF fills that gap with a clean, modern library built from scratch:
 - **async/await** throughout -- no completion handlers, no Combine required
 - **Sendable** and thread-safe by design
 - **Codable** models with XMLCoder for type-safe SOAP marshalling
-- **Network.framework** for WS-Discovery (no raw sockets)
+- **BSD sockets** for WS-Discovery multicast (no third-party dependencies)
 - **CryptoKit** for WS-Security digest auth (no OpenSSL)
 
 ## Features
@@ -191,7 +199,7 @@ swift run ONVIFExplorer 192.168.1.100 admin password
 
 ```
 Sources/SwiftONVIF/
-├── Discovery/          WS-Discovery multicast via Network.framework
+├── Discovery/          WS-Discovery multicast via BSD sockets
 ├── Auth/               WS-Security UsernameToken via CryptoKit
 ├── SOAP/               SOAP 1.2 envelope builder + HTTP client via XMLCoder
 ├── Services/
@@ -211,7 +219,7 @@ Sources/SwiftONVIF/
 |-----------|---------|
 | [XMLCoder](https://github.com/CoreOffice/XMLCoder) | Type-safe XML encoding/decoding for SOAP |
 | Foundation | HTTP networking (URLSession) |
-| Network | WS-Discovery UDP multicast |
+| BSD Sockets (Darwin/Glibc) | WS-Discovery UDP multicast |
 | CryptoKit | WS-Security SHA-1 digest authentication |
 
 ## Contributing
