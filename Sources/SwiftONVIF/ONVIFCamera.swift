@@ -13,22 +13,11 @@ import Foundation
 ///     credential: ONVIFCredential(username: "admin", password: "pass")
 /// )
 ///
-/// // Get device info
 /// let info = try await camera.device.getDeviceInformation()
-///
-/// // Get media profiles and stream URIs
+/// try await camera.initialize()
 /// let profiles = try await camera.media.getProfiles()
-/// let streamURI = try await camera.media.getStreamURI(profileToken: profiles[0].token)
-///
-/// // PTZ control (if supported)
-/// if let ptz = camera.ptz {
-///     try await ptz.continuousMove(
-///         profileToken: profiles[0].token,
-///         velocity: PTZSpeed(panTilt: Vector2D(x: 0.5, y: 0.0))
-///     )
-/// }
 /// ```
-public final class ONVIFCamera: Sendable {
+public final class ONVIFCamera {
 
     /// The camera's host address (IP or hostname).
     public let host: String
@@ -62,12 +51,15 @@ public final class ONVIFCamera: Sendable {
     /// Event service. Nil if the device does not support it.
     public private(set) var events: EventService?
 
+    /// Device capabilities, populated after `initialize()`.
+    public private(set) var capabilities: Capabilities?
+
     private let client: SOAPClient
 
     /// Creates an ONVIF camera connection.
     ///
-    /// After creation, call `initialize()` to discover available services and populate
-    /// the `media`, `ptz`, `imaging`, and `events` properties.
+    /// After creation, the `device` service is immediately available. Call `initialize()` to
+    /// discover which other services the camera supports and populate `media`, `ptz`, etc.
     ///
     /// - Parameters:
     ///   - host: Camera IP address or hostname.
@@ -92,14 +84,44 @@ public final class ONVIFCamera: Sendable {
 
     /// Queries the device for supported services and initializes service properties.
     ///
-    /// This calls `GetCapabilities` (or `GetServices` on newer devices) to discover
-    /// which services the camera supports and their endpoint URLs. After this call,
-    /// `media`, `ptz`, `imaging`, and `events` will be populated based on device capabilities.
+    /// Calls `GetCapabilities` to discover which services the camera supports.
+    /// After this call, `media`, `ptz`, `imaging`, and `events` will be populated.
     public func initialize() async throws {
-        // TODO: v0.1.0 — Implement service discovery
-        // 1. Call device.getCapabilities()
-        // 2. For each capability with a non-nil xAddr, create the corresponding service
-        // 3. Set media, media2, ptz, imaging, events properties
-        fatalError("Not yet implemented")
+        let caps = try await device.getCapabilities()
+        self.capabilities = caps
+
+        // Initialize Media service
+        if let mediaCap = caps.media {
+            self.media = MediaService(client: client, serviceURL: mediaCap.xAddr)
+        } else {
+            // Fallback: construct media URL from device URL pattern
+            let mediaURL = URL(string: "http://\(host):\(port)/onvif/media_service")!
+            self.media = MediaService(client: client, serviceURL: mediaURL)
+        }
+
+        // Initialize PTZ if supported
+        if let ptzCap = caps.ptz {
+            self.ptz = PTZService(client: client, serviceURL: ptzCap.xAddr)
+        }
+
+        // Initialize Imaging if supported
+        if let imgCap = caps.imaging {
+            self.imaging = ImagingService(client: client, serviceURL: imgCap.xAddr)
+        }
+
+        // Initialize Events if supported
+        if let evtCap = caps.events {
+            self.events = EventService(client: client, serviceURL: evtCap.xAddr)
+        }
+
+        // Try to find Media2 via GetServices (not in GetCapabilities)
+        if let services = try? await device.getServices() {
+            for service in services {
+                if service.namespace.contains("ver20/media") {
+                    self.media2 = Media2Service(client: client, serviceURL: service.xAddr)
+                    break
+                }
+            }
+        }
     }
 }

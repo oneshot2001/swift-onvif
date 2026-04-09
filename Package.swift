@@ -30,7 +30,8 @@ let package = Package(
         ),
         .executableTarget(
             name: "ONVIFExplorer",
-            dependencies: ["SwiftONVIF"]
+            dependencies: ["SwiftONVIF"],
+            path: "Examples/ONVIFExplorer"
         )
     ]
 )
