@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="50%" style="stop-color:#16213e"/>
+      <stop offset="100%" style="stop-color:#0f3460"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#F05138"/>
+      <stop offset="100%" style="stop-color:#FF6B4A"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F05138;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#F05138;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="300" rx="12" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.05" stroke="white" stroke-width="0.5">
+    <line x1="0" y1="60" x2="1200" y2="60"/>
+    <line x1="0" y1="120" x2="1200" y2="120"/>
+    <line x1="0" y1="180" x2="1200" y2="180"/>
+    <line x1="0" y1="240" x2="1200" y2="240"/>
+    <line x1="200" y1="0" x2="200" y2="300"/>
+    <line x1="400" y1="0" x2="400" y2="300"/>
+    <line x1="600" y1="0" x2="600" y2="300"/>
+    <line x1="800" y1="0" x2="800" y2="300"/>
+    <line x1="1000" y1="0" x2="1000" y2="300"/>
+  </g>
+
+  <!-- Camera lens icon -->
+  <g transform="translate(100, 90)">
+    <!-- Outer ring -->
+    <circle cx="60" cy="60" r="55" stroke="url(#accent)" stroke-width="3" fill="none" opacity="0.8"/>
+    <!-- Inner ring -->
+    <circle cx="60" cy="60" r="38" stroke="#F05138" stroke-width="2" fill="none" opacity="0.5"/>
+    <!-- Center dot -->
+    <circle cx="60" cy="60" r="12" fill="url(#accent)" opacity="0.9"/>
+    <!-- Lens segments -->
+    <path d="M60 5 L60 22" stroke="url(#accent)" stroke-width="1.5" opacity="0.4"/>
+    <path d="M60 98 L60 115" stroke="url(#accent)" stroke-width="1.5" opacity="0.4"/>
+    <path d="M5 60 L22 60" stroke="url(#accent)" stroke-width="1.5" opacity="0.4"/>
+    <path d="M98 60 L115 60" stroke="url(#accent)" stroke-width="1.5" opacity="0.4"/>
+    <!-- Glow -->
+    <circle cx="60" cy="60" r="60" fill="url(#glow)"/>
+  </g>
+
+  <!-- Title -->
+  <text x="280" y="120" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="56" font-weight="700" fill="white" letter-spacing="-1">
+    Swift<tspan fill="url(#accent)">ONVIF</tspan>
+  </text>
+
+  <!-- Subtitle -->
+  <text x="280" y="165" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif" font-size="22" fill="#8892b0" font-weight="400">
+    Pure Swift ONVIF client for iOS, macOS, and tvOS
+  </text>
+
+  <!-- Feature pills -->
+  <g transform="translate(280, 195)">
+    <rect x="0" y="0" width="120" height="30" rx="15" fill="#F05138" opacity="0.15"/>
+    <text x="60" y="20" font-family="-apple-system, BlinkMacSystemFont, 'SF Mono', monospace" font-size="12" fill="#F05138" text-anchor="middle" font-weight="500">async/await</text>
+
+    <rect x="135" y="0" width="80" height="30" rx="15" fill="#F05138" opacity="0.15"/>
+    <text x="175" y="20" font-family="-apple-system, BlinkMacSystemFont, 'SF Mono', monospace" font-size="12" fill="#F05138" text-anchor="middle" font-weight="500">SPM</text>
+
+    <rect x="230" y="0" width="130" height="30" rx="15" fill="#F05138" opacity="0.15"/>
+    <text x="295" y="20" font-family="-apple-system, BlinkMacSystemFont, 'SF Mono', monospace" font-size="12" fill="#F05138" text-anchor="middle" font-weight="500">WS-Discovery</text>
+
+    <rect x="375" y="0" width="130" height="30" rx="15" fill="#F05138" opacity="0.15"/>
+    <text x="440" y="20" font-family="-apple-system, BlinkMacSystemFont, 'SF Mono', monospace" font-size="12" fill="#F05138" text-anchor="middle" font-weight="500">WS-Security</text>
+
+    <rect x="520" y="0" width="80" height="30" rx="15" fill="#F05138" opacity="0.15"/>
+    <text x="560" y="20" font-family="-apple-system, BlinkMacSystemFont, 'SF Mono', monospace" font-size="12" fill="#F05138" text-anchor="middle" font-weight="500">PTZ</text>
+
+    <rect x="615" y="0" width="100" height="30" rx="15" fill="#F05138" opacity="0.15"/>
+    <text x="665" y="20" font-family="-apple-system, BlinkMacSystemFont, 'SF Mono', monospace" font-size="12" fill="#F05138" text-anchor="middle" font-weight="500">Codable</text>
+  </g>
+
+  <!-- Swift bird silhouette (simplified) -->
+  <g transform="translate(1050, 40)" opacity="0.08">
+    <path d="M120 20C100 40 60 70 30 85C50 75 75 60 95 40C70 65 35 85 10 95C40 90 70 80 95 60C75 80 45 100 20 110C55 105 85 90 110 70C95 90 70 110 50 120C80 115 105 100 120 80Z" fill="white" transform="scale(1.5)"/>
+  </g>
+</svg>
