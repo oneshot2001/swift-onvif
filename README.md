@@ -222,6 +222,16 @@ Sources/SwiftONVIF/
 | BSD Sockets (Darwin/Glibc) | WS-Discovery UDP multicast |
 | CryptoKit | WS-Security SHA-1 digest authentication |
 
+## Tested Cameras
+
+SwiftONVIF is tested against real hardware. If you've verified it with a camera not listed here, please [open an issue](https://github.com/oneshot2001/swift-onvif/issues) or PR to add it.
+
+| Manufacturer | Model | SoC | Auth Method | Discovery | Device Info | Notes |
+|-------------|-------|-----|-------------|-----------|-------------|-------|
+| Axis | Q6358-LE | ARTPEC-9 | HTTP Digest | Yes | Yes | PTZ dome, firmware 12.7.61 |
+
+> **Want to help?** Testing against diverse camera brands (Hanwha, Hikvision, Dahua, Bosch, Vivotek) is one of the most valuable contributions. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Contributing
 
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
