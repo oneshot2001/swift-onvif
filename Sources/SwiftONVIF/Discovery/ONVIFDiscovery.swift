@@ -1,10 +1,16 @@
 import Foundation
-import Network
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 /// Discovers ONVIF-compliant cameras on the local network using WS-Discovery (SOAP-over-UDP multicast).
 ///
 /// WS-Discovery sends a `Probe` message to the multicast address `239.255.255.250:3702`.
 /// Cameras respond with `ProbeMatch` messages containing their ONVIF service endpoints.
+///
+/// Uses BSD sockets directly for reliable multicast send + unicast receive on the same port.
 ///
 /// Usage:
 /// ```swift
@@ -47,83 +53,73 @@ public final class ONVIFDiscovery: Sendable {
         """
 
         return try await withCheckedThrowingContinuation { continuation in
-            var devices: [String: DiscoveredDevice] = [:]
-            let lock = NSLock()
+            DispatchQueue.global(qos: .userInitiated).async {
+                var devices: [String: DiscoveredDevice] = [:]
 
-            // Create UDP connection to multicast group
-            let host = NWEndpoint.Host(Self.multicastAddress)
-            let port = NWEndpoint.Port(rawValue: Self.multicastPort)!
-            let params = NWParameters.udp
-            params.allowLocalEndpointReuse = true
+                // Create UDP socket
+                let fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+                guard fd >= 0 else {
+                    continuation.resume(returning: [])
+                    return
+                }
 
-            let connection = NWConnection(host: host, port: port, using: params)
+                defer { close(fd) }
 
-            // Set up a listener to receive responses on the same port
-            let listenerParams = NWParameters.udp
-            listenerParams.allowLocalEndpointReuse = true
+                // Allow address reuse
+                var reuse: Int32 = 1
+                setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, socklen_t(MemoryLayout<Int32>.size))
 
-            var hasResumed = false
-            let resumeLock = NSLock()
+                // Set receive timeout
+                let timeoutSecs = Int(timeout.components.seconds)
+                var tv = timeval(tv_sec: timeoutSecs, tv_usec: 0)
+                setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
 
-            @Sendable func safeResume(_ result: Result<[DiscoveredDevice], Error>) {
-                resumeLock.lock()
-                defer { resumeLock.unlock() }
-                guard !hasResumed else { return }
-                hasResumed = true
-                continuation.resume(with: result)
-            }
+                // Build multicast destination address
+                var destAddr = sockaddr_in()
+                destAddr.sin_family = sa_family_t(AF_INET)
+                destAddr.sin_port = Self.multicastPort.bigEndian
+                inet_pton(AF_INET, Self.multicastAddress, &destAddr.sin_addr)
 
-            // Create a UDP listener on an ephemeral port
-            guard let listener = try? NWListener(using: listenerParams, on: .any) else {
-                continuation.resume(returning: [])
-                return
-            }
+                // Send probe
+                let probeData = Array(probeMessage.utf8)
+                let sent = withUnsafePointer(to: &destAddr) { ptr in
+                    ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { sa in
+                        sendto(fd, probeData, probeData.count, 0, sa, socklen_t(MemoryLayout<sockaddr_in>.size))
+                    }
+                }
 
-            listener.newConnectionHandler = { newConnection in
-                newConnection.start(queue: .global())
-                newConnection.receiveMessage { data, _, _, error in
-                    if let data = data, let xml = String(data: data, encoding: .utf8) {
-                        if let device = Self.parseProbeMatch(xml: xml) {
-                            lock.lock()
+                guard sent > 0 else {
+                    continuation.resume(returning: [])
+                    return
+                }
+
+                // Receive responses until timeout
+                var buffer = [UInt8](repeating: 0, count: 65535)
+                let deadline = Date().addingTimeInterval(Double(timeoutSecs))
+
+                while Date() < deadline {
+                    var srcAddr = sockaddr_in()
+                    var srcLen = socklen_t(MemoryLayout<sockaddr_in>.size)
+
+                    let received = withUnsafeMutablePointer(to: &srcAddr) { ptr in
+                        ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { sa in
+                            recvfrom(fd, &buffer, buffer.count, 0, sa, &srcLen)
+                        }
+                    }
+
+                    if received > 0 {
+                        let data = Data(buffer[0..<received])
+                        if let xml = String(data: data, encoding: .utf8),
+                           let device = Self.parseProbeMatch(xml: xml) {
                             devices[device.id] = device
-                            lock.unlock()
                         }
+                    } else {
+                        // Timeout or error — stop receiving
+                        break
                     }
-                    // Keep receiving
-                    newConnection.cancel()
                 }
-            }
 
-            listener.stateUpdateHandler = { state in
-                switch state {
-                case .ready:
-                    // Listener is ready, send probe
-                    connection.start(queue: .global())
-                    connection.stateUpdateHandler = { connState in
-                        if case .ready = connState {
-                            let probeData = Data(probeMessage.utf8)
-                            connection.send(content: probeData, completion: .contentProcessed { _ in })
-                        }
-                    }
-                case .failed:
-                    safeResume(.success([]))
-                default:
-                    break
-                }
-            }
-
-            listener.start(queue: .global())
-
-            // Timeout: collect responses and return
-            let timeoutNanos = UInt64(timeout.components.seconds) * 1_000_000_000
-                + UInt64(timeout.components.attoseconds / 1_000_000_000)
-            DispatchQueue.global().asyncAfter(deadline: .now() + .nanoseconds(Int(timeoutNanos))) {
-                connection.cancel()
-                listener.cancel()
-                lock.lock()
-                let result = Array(devices.values)
-                lock.unlock()
-                safeResume(.success(result))
+                continuation.resume(returning: Array(devices.values))
             }
         }
     }
