@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope
+    xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
+    xmlns:tds="http://www.onvif.org/ver10/device/wsdl">
+  <SOAP-ENV:Body>
+    <tds:GetDeviceInformationResponse>
+      <tds:Manufacturer>TestManufacturer</tds:Manufacturer>
+      <tds:Model>TestModel-1000</tds:Model>
+      <tds:FirmwareVersion>1.2.3</tds:FirmwareVersion>
+      <tds:SerialNumber>ABCD1234567890</tds:SerialNumber>
+      <tds:HardwareId>HW-100</tds:HardwareId>
+    </tds:GetDeviceInformationResponse>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
