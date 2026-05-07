@@ -128,6 +128,13 @@ public final class DeviceService: Sendable {
 
     /// Parses GetCapabilitiesResponse XML.
     static func parseCapabilities(from xml: String) throws -> Capabilities {
+        let wrapperOpen = "<(?:[a-zA-Z][a-zA-Z0-9_]*:)?GetCapabilitiesResponse(?:\\s[^>]*)?>"
+        let wrapperClose = "</(?:[a-zA-Z][a-zA-Z0-9_]*:)?GetCapabilitiesResponse>"
+        guard xml.range(of: wrapperOpen, options: .regularExpression) != nil,
+              xml.range(of: wrapperClose, options: .regularExpression) != nil else {
+            throw ONVIFError.invalidResponse
+        }
+
         func parseService(_ name: String) -> ServiceCapability? {
             let escaped = NSRegularExpression.escapedPattern(for: name)
             let openPattern = "<(?:[a-zA-Z][a-zA-Z0-9_]*:)?\(escaped)(?:\\s[^>]*)?>"
