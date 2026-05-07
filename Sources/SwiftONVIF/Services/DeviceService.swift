@@ -129,19 +129,29 @@ public final class DeviceService: Sendable {
     /// Parses GetCapabilitiesResponse XML.
     static func parseCapabilities(from xml: String) throws -> Capabilities {
         func parseService(_ name: String) -> ServiceCapability? {
-            // Look for <tt:Name> block or <tt:XAddr> inside a capabilities section
-            // Pattern: find the section for this service, then extract XAddr
-            guard let sectionStart = xml.range(of: "<tt:\(name)>", options: .caseInsensitive)
-                    ?? xml.range(of: "<tt:\(name) ", options: .caseInsensitive) else {
+            let escaped = NSRegularExpression.escapedPattern(for: name)
+            let openPattern = "<(?:[a-zA-Z][a-zA-Z0-9_]*:)?\(escaped)(?:\\s[^>]*)?>"
+            let closePattern = "</(?:[a-zA-Z][a-zA-Z0-9_]*:)?\(escaped)>"
+
+            guard let openRegex = try? NSRegularExpression(pattern: openPattern),
+                  let closeRegex = try? NSRegularExpression(pattern: closePattern) else {
                 return nil
             }
 
-            let closingTag = "</tt:\(name)>"
-            guard let sectionEnd = xml.range(of: closingTag, options: .caseInsensitive, range: sectionStart.upperBound..<xml.endIndex) else {
+            let fullRange = NSRange(xml.startIndex..., in: xml)
+            guard let openMatch = openRegex.firstMatch(in: xml, range: fullRange),
+                  let openRange = Range(openMatch.range, in: xml) else {
                 return nil
             }
 
-            let section = String(xml[sectionStart.upperBound..<sectionEnd.lowerBound])
+            let afterOpen = openRange.upperBound
+            let closeSearch = NSRange(afterOpen..<xml.endIndex, in: xml)
+            guard let closeMatch = closeRegex.firstMatch(in: xml, range: closeSearch),
+                  let closeRange = Range(closeMatch.range, in: xml) else {
+                return nil
+            }
+
+            let section = String(xml[afterOpen..<closeRange.lowerBound])
             guard let xAddr = Self.extractValue(named: "XAddr", from: section),
                   let url = URL(string: xAddr) else {
                 return nil
