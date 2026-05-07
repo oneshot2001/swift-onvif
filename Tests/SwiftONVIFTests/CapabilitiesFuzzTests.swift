@@ -27,19 +27,29 @@ final class CapabilitiesFuzzTests: XCTestCase {
     }
 
     static let mutators: [Mutator] = [
-        // 1. Hard-coded `tt:` prefix in parseCapabilities will silently miss everything.
         Mutator(name: "NamespaceSwapTtToAlt", category: .benign) { input in
             input.replacingOccurrences(of: "tt:", with: "alt:")
         },
-        // 2. Truncate at 60% — destructive, parser must reject not silently return empty.
         Mutator(name: "TruncateAt60", category: .destructive) { input in
             let cutoff = (input.count * 60) / 100
             return String(input.prefix(cutoff))
         },
-        // 3. Drop the entire <tt:Device> section — destructive against required service.
-        Mutator(name: "DropDeviceSection", category: .destructive) { input in
-            let pattern = #"<tt:Device>[\s\S]*?</tt:Device>"#
-            return input.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+        Mutator(name: "DuplicateXAddr", category: .benign) { input in
+            input.replacingOccurrences(
+                of: "<tt:XAddr>http://192.168.1.32/onvif/device_service</tt:XAddr>",
+                with: "<tt:XAddr>http://192.168.1.32/onvif/device_service</tt:XAddr><tt:XAddr>http://192.168.1.32/onvif/device_service</tt:XAddr>"
+            )
+        },
+        // Wrong response wrapper — parser must verify it got GetCapabilitiesResponse, not
+        // some other response type, before extracting service blocks.
+        Mutator(name: "TypeConfuseResponseWrapper", category: .destructive) { input in
+            input.replacingOccurrences(of: "GetCapabilitiesResponse", with: "GetServicesResponse")
+        },
+        Mutator(name: "EncodingMutation", category: .benign) { input in
+            input.replacingOccurrences(of: #"encoding="UTF-8""#, with: #"encoding="ISO-8859-1""#)
+        },
+        Mutator(name: "LengthExtension", category: .benign) { input in
+            input + "<junk>extra trailing content after envelope</junk>"
         },
     ]
 
@@ -96,15 +106,13 @@ final class CapabilitiesFuzzTests: XCTestCase {
 
             switch mutator.category {
             case .destructive:
-                // Destructive mutation should NOT silently parse to a populated struct,
-                // but all-nil-after-destructive-mutation is the canonical silent fail-open shape.
-                if allNil {
-                    failures.append((
-                        mutator,
-                        "F2-SilentFailOpen",
-                        "Destructive mutation returned all-nil Capabilities (no error, no signal)"
-                    ))
-                }
+                // Destructive mutation must be rejected outright — any non-throw result
+                // (empty or partial) is silent fail-open.
+                failures.append((
+                    mutator,
+                    "F2-SilentFailOpen",
+                    "Destructive mutation parsed without throwing"
+                ))
             case .benign:
                 // Benign mutation should preserve the data we had at baseline.
                 if allNil {
