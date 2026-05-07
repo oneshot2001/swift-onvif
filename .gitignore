@@ -7,3 +7,7 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 Package.resolved
+
+# Fuzz harness ephemeral output (regenerated each /loop iteration)
+/tests/fuzz/failures/
+
